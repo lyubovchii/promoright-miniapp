@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>Маркетинг — PromoRight · 100Staff</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -411,7 +413,7 @@ footer{
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="pdf-btn" id="action-btn"></button>
+          <button class="pdf-btn" id="action-btn" onclick="exportSnapshot()">📸 Скриншот</button>
           <div class="period-tabs">
             <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
             <button onclick="setMonth('may')" id="tab-may">Май</button>
@@ -521,19 +523,6 @@ if (tg) { tg.ready(); tg.expand(); }
 // ── REGISTER DATALABELS ──
 if(window.ChartDataLabels) Chart.register(ChartDataLabels);
 
-// ── SMART ACTION BUTTON ──
-function initActionBtn(){
-  const btn=document.getElementById('action-btn');
-  if(!btn) return;
-  const isInTelegram = !!(tg && tg.platform && tg.platform !== 'unknown') || /Telegram/i.test(navigator.userAgent);
-  if(isInTelegram){
-    btn.textContent='🌐 В браузере';
-    btn.onclick=()=>tg.openLink(location.href);
-  } else {
-    btn.textContent='📸 Скриншот';
-    btn.onclick=exportSnapshot;
-  }
-}
 
 // ── PLAN DATA (из Google Sheets) ──
 const PLAN = {
@@ -1043,7 +1032,6 @@ window.addEventListener('DOMContentLoaded', async ()=>{
       }
     }
   } catch(e){ console.warn('data.json fetch failed, using static data', e); }
-  initActionBtn();
   renderAll();
 });
 </script>
