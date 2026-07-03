@@ -592,7 +592,7 @@ function renderFunnel(){
   const stages=[
     {l:'Отклики',v:cd.responses,c:color},
     {l:'Лиды',v:cd.leads,c:color,cvr:pct(cd.leads,cd.responses)},
-    {l:'Квал.',v:cd.qualLeads,c:color,cvr:pct(cd.qualLeads,cd.leads)},
+    {l:'Переговоры',v:cd.qualLeads,c:color,cvr:pct(cd.qualLeads,cd.leads)},
     {l:'Продажи',v:cd.sales,c:color,cvr:pct(cd.sales,cd.qualLeads)},
   ];
   const max=stages[0].v||1;
@@ -786,7 +786,7 @@ function genAIInsight(){
     const cps=Math.round((cd.budget-cd.returns)/cd.sales);
     const cpl=cd.cpl||Math.round(cd.budget/cd.leads);
     const mult=(cps/cpl).toFixed(1);
-    insights.push(`<strong>ИИ-инсайт:</strong> Одна сделка обходится в ${fmt(cps)} ₽ — в ${mult}× дороже лида (${cpl} ₽). Снижение потерь на этапе переговоров напрямую сократит CPS.`);
+    insights.push(`<strong>ИИ-инсайт:</strong> Одна сделка обходится в ${fmt(cps)} ₽ — в ${mult}× дороже лида (${cpl} ₽). Чем выше конверсия переговоров в сделку, тем ниже CPS без увеличения бюджета.`);
   }
   // Тренд лидов
   if(curMonth==='jun'){
