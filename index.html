@@ -6,6 +6,7 @@
 <title>Маркетинг — PromoRight · 100Staff</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -325,6 +326,40 @@ footer{
 @media (max-width: 380px) {
   .kpi-grid { grid-template-columns:1fr; }
 }
+
+/* Tooltip термины */
+.term-icon{cursor:pointer;font-size:11px;color:var(--text3);margin-left:4px;vertical-align:middle;user-select:none;}
+.term-icon:hover{color:var(--teal);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#fff;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-box h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;}
+.modal-box p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px;}
+.modal-box strong{color:var(--text);}
+.modal-close{margin-top:16px;width:100%;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;}
+
+/* Сводка */
+.summary-card{background:linear-gradient(135deg,var(--teal) 0%,#0f766e 100%);border-radius:16px;padding:16px 20px;margin-bottom:16px;color:#fff;}
+.summary-card .s-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;opacity:.75;margin-bottom:6px;}
+.summary-card .s-text{font-size:14px;line-height:1.6;font-weight:500;}
+
+/* PDF кнопка */
+.pdf-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:4px;}
+.pdf-btn:hover{background:var(--teal-lt);border-color:var(--teal);color:var(--teal);}
+
+/* Plan vs Fact полоска */
+.kpi-plan{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.kpi-plan-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.kpi-plan-fill{height:100%;border-radius:2px;transition:width .4s;}
+.kpi-plan-pct{font-size:10px;color:var(--text3);white-space:nowrap;}
+
+@media print {
+  .sidebar,.hamburger,.period-tabs,.topbar,.pdf-btn,.modal-overlay{display:none!important;}
+  .app{display:block;}
+  .main{padding:0;}
+  .card{break-inside:avoid;box-shadow:none;border:1px solid #e2e8f0;}
+  body{background:#fff;}
+}
 </style>
 </head>
 <body>
@@ -374,11 +409,14 @@ footer{
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-        <div class="period-tabs">
-          <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
-          <button onclick="setMonth('may')" id="tab-may">Май</button>
-          <button onclick="setMonth('jun')" id="tab-jun" class="active">Июн</button>
-          <button onclick="setMonth('all')" id="tab-all">Всё</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="pdf-btn" onclick="window.print()">🖨 PDF</button>
+          <div class="period-tabs">
+            <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
+            <button onclick="setMonth('may')" id="tab-may">Май</button>
+            <button onclick="setMonth('jun')" id="tab-jun" class="active">Июн</button>
+            <button onclick="setMonth('all')" id="tab-all">Всё</button>
+          </div>
         </div>
         <div class="period-tabs">
           <button onclick="setChannel('all')" id="ch-tab-all" class="active">Все</button>
@@ -390,6 +428,12 @@ footer{
 
     <!-- CONTENT -->
     <div class="content">
+
+      <!-- СВОДКА -->
+      <div class="summary-card" id="summary-card">
+        <div class="s-label">Сводка за период</div>
+        <div class="s-text" id="summary-text">Загрузка...</div>
+      </div>
 
       <!-- KPI -->
       <div class="kpi-grid" id="kpi-grid"></div>
@@ -460,10 +504,52 @@ footer{
   </div><!-- /main -->
 </div><!-- /app -->
 
+<!-- МОДАЛКА ТЕРМИНОВ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box">
+    <h3 id="modal-title">Термин</h3>
+    <div id="modal-body"></div>
+    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">Понятно</button>
+  </div>
+</div>
+
 <script>
 // ── TELEGRAM WEB APP INIT ──
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
+
+// ── REGISTER DATALABELS ──
+if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+
+// ── PLAN DATA (из Google Sheets) ──
+const PLAN = {
+  apr:{leads:80, qualLeads:75, responses:210, sales:null},
+  may:{leads:80, qualLeads:50, responses:200, sales:null},
+  jun:{leads:40, qualLeads:20, responses:100, sales:null},
+  all:{leads:200, qualLeads:145, responses:510, sales:null},
+};
+
+// ── TERMS GLOSSARY ──
+const TERMS = {
+  'CPL':     {title:'CPL — Cost Per Lead', body:'<p>Стоимость одного лида — сколько ты тратишь на рекламу, чтобы получить одно обращение от заинтересованного клиента.</p><p><strong>Формула:</strong> Бюджет ÷ Лиды</p><p>Чем ниже — тем эффективнее реклама.</p>'},
+  'CPS':     {title:'CPS — Cost Per Sale', body:'<p>Стоимость одной сделки — во сколько обходится каждая закрытая продажа.</p><p><strong>Формула:</strong> Бюджет ÷ Продажи</p><p>Показывает реальную эффективность воронки целиком.</p>'},
+  'Воронка': {title:'Воронка продаж', body:'<p>Путь клиента от первого контакта до сделки:</p><p><strong>Отклики</strong> → видят твой профиль и пишут<br><strong>Лиды</strong> → живые диалоги с заинтересованными<br><strong>Переговоры</strong> → клиент подходит по бюджету и задаче, обсуждаем детали<br><strong>Продажи</strong> → сделка закрыта</p>'},
+  'Маржа':   {title:'Маржа (прибыль)', body:'<p>Чистая прибыль после вычета всех расходов на персонал и выполнение заказа.</p><p>Не путать с выручкой — выручка это всё что пришло, маржа это то что осталось.</p>'},
+  'Бюджет':  {title:'Бюджет и возвраты', body:'<p><strong>Бюджет</strong> — деньги потраченные на рекламу (подписка Профи.ру + ставки за отклики).</p><p><strong>Возвраты</strong> — средства за отклики которые клиент так и не просмотрел. Профи.ру возвращает их на баланс.</p>'},
+  'Конверсия':{title:'Конверсия', body:'<p>Процент переходов между этапами воронки.</p><p>Здесь показывается общая конверсия: <strong>отклик → продажа</strong>.</p><p>Пример: 100 откликов, 5 продаж = конверсия 5%.</p>'},
+};
+
+function showTerm(key){
+  const t = TERMS[key];
+  if(!t) return;
+  document.getElementById('modal-title').textContent = t.title;
+  document.getElementById('modal-body').innerHTML = t.body;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e){
+  if(e.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
 
 // ── DATA ──────────────────────────────────────
 const D = {
@@ -549,36 +635,46 @@ function renderKPI(){
   const prevCps=prevCd&&prevCd.sales>0?((prevCd.budget-prevCd.returns)/prevCd.sales):null;
   const dCPS=prevCd&&prevCd.sales>0?getDelta(cd.sales>0?net/cd.sales:null,prevCps):null;
 
+  // Plan vs Fact
+  const planM = PLAN[curMonth]||{};
+  const planLeads = curChannel==='all'?(planM.leads||0):null;
+  const planQual  = curChannel==='all'?(planM.qualLeads||0):null;
+  const planResp  = curChannel==='all'?(planM.responses||0):null;
+
+  function planBar(fact, plan){
+    if(!plan||!fact) return '';
+    const pct=Math.min(Math.round(fact/plan*100),100);
+    const color=pct>=90?'#0d9488':pct>=65?'#d97706':'#e11d48';
+    return `<div class="kpi-plan"><div class="kpi-plan-bar"><div class="kpi-plan-fill" style="width:${pct}%;background:${color}"></div></div><div class="kpi-plan-pct">план ${pct}%</div></div>`;
+  }
+
   const cards=[
-    {label:'Бюджет (нетто)',val:fmt(net)+' ₽',sub:`возвраты: −${fmt(cd.returns)} ₽`,delta:dBudget,deltaMode:'neutral',line:'#94a3b8'},
-    {label:'Продажи',val:cd.sales,sub:`лиды: ${cd.leads}`,delta:prevCd?getDelta(cd.sales,prevCd.sales):null,deltaMode:'standard',line:'#1a7f74'},
-    {label:'Маржа',val:cd.margin?fmt(cd.margin)+' ₽':'—',sub:cd.marginEst?'~ оценочная':cd.margin?'фактическая':'н/д',delta:prevCd&&prevCd.margin?getDelta(cd.margin,prevCd.margin):null,deltaMode:'standard',line:'#7c3aed'},
-    {label:cplLabel,val:cd.cpl?cd.cpl.toFixed(0)+' ₽':'—',sub:'стоимость лида',delta:dCPL,deltaMode:'inverted',line:'#d97706'},
-    {label:'CPS',val:cps,sub:'стоимость продажи',delta:dCPS,deltaMode:'inverted',line:'#e11d48'},
-    {label:'Конверсия',val:cvr,sub:'отклик → продажа',delta:null,deltaMode:'standard',line:'#0d9488'},
-    {label:rspLabel,val:fmt(cd.responses),sub:'',delta:prevCd?getDelta(cd.responses,prevCd.responses):null,deltaMode:'standard',line:'#2563eb'},
+    {label:'Бюджет (нетто)',val:fmt(net)+' ₽',sub:`возвраты: −${fmt(cd.returns)} ₽`,delta:dBudget,deltaMode:'neutral',line:'#94a3b8',term:'Бюджет',plan:''},
+    {label:'Продажи',val:cd.sales,sub:`лиды: ${cd.leads}`,delta:prevCd?getDelta(cd.sales,prevCd.sales):null,deltaMode:'standard',line:'#1a7f74',term:null,plan:planBar(cd.leads,planLeads)},
+    {label:'Маржа',val:cd.margin?fmt(cd.margin)+' ₽':'—',sub:cd.marginEst?'~ оценочная':cd.margin?'фактическая':'н/д',delta:prevCd&&prevCd.margin?getDelta(cd.margin,prevCd.margin):null,deltaMode:'standard',line:'#7c3aed',term:'Маржа',plan:''},
+    {label:cplLabel,val:cd.cpl?cd.cpl.toFixed(0)+' ₽':'—',sub:'стоимость лида',delta:dCPL,deltaMode:'inverted',line:'#d97706',term:'CPL',plan:''},
+    {label:'CPS',val:cps,sub:'стоимость продажи',delta:dCPS,deltaMode:'inverted',line:'#e11d48',term:'CPS',plan:''},
+    {label:'Конверсия',val:cvr,sub:'отклик → продажа',delta:null,deltaMode:'standard',line:'#0d9488',term:'Конверсия',plan:''},
+    {label:rspLabel,val:fmt(cd.responses),sub:'',delta:prevCd?getDelta(cd.responses,prevCd.responses):null,deltaMode:'standard',line:'#2563eb',term:null,plan:planBar(cd.responses,planResp)},
   ];
 
   document.getElementById('kpi-grid').innerHTML=cards.map(c=>{
     let deltHtml='';
     if(c.delta){
       let cls;
-      if(c.deltaMode==='neutral'){
-        cls='neutral';
-      } else if(c.deltaMode==='inverted'){
-        // падение CPL = зелёный; рост CPL = красный
-        cls=c.delta.up?'down':'up';
-      } else {
-        cls=c.delta.up?'up':'down';
-      }
+      if(c.deltaMode==='neutral') cls='neutral';
+      else if(c.deltaMode==='inverted') cls=c.delta.up?'down':'up';
+      else cls=c.delta.up?'up':'down';
       const arrow=c.delta.up?'↑':'↓';
       deltHtml=`<div class="kpi-delta ${cls}">${arrow} ${Math.abs(c.delta.val)}%</div>`;
     }
+    const termIcon=c.term?`<span class="term-icon" onclick="showTerm('${c.term}')" title="Что это?">ⓘ</span>`:'';
     return`<div class="kpi-card" style="--accent-line:${c.line}">
-      <div class="kpi-eyebrow">${c.label}</div>
+      <div class="kpi-eyebrow">${c.label}${termIcon}</div>
       <div class="kpi-value">${c.val}</div>
       ${deltHtml}
       <div class="kpi-sub">${c.sub}</div>
+      ${c.plan||''}
     </div>`;
   }).join('');
 }
@@ -619,13 +715,19 @@ function renderTrend(){
     data:{
       labels:d.weeks.labels,
       datasets:[
-        {label:'Лиды',data:d.weeks.leads,backgroundColor:'rgba(26,127,116,.15)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:4,order:2},
-        {label:'Продажи',data:d.weeks.sales,type:'line',borderColor:'#0d9488',backgroundColor:'rgba(13,148,136,.08)',pointBackgroundColor:'#0d9488',pointRadius:4,tension:.4,fill:true,order:1}
+        {label:'Лиды',data:d.weeks.leads,backgroundColor:'rgba(26,127,116,.18)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:4,order:2,
+         datalabels:{anchor:'end',align:'top',color:'#1a7f74',font:{size:10,weight:'600'},formatter:v=>v||''}},
+        {label:'Продажи',data:d.weeks.sales,type:'line',borderColor:'#0d9488',backgroundColor:'rgba(13,148,136,.08)',pointBackgroundColor:'#0d9488',pointRadius:4,tension:.4,fill:true,order:1,
+         datalabels:{anchor:'end',align:'top',color:'#0d9488',font:{size:10,weight:'700'},formatter:v=>v>0?v:''}}
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11,family:'Inter'},boxWidth:10,padding:10}}},
+      layout:{padding:{top:16}},
+      plugins:{
+        legend:{labels:{color:'#94a3b8',font:{size:11,family:'Inter'},boxWidth:10,padding:10}},
+        datalabels:{display:true}
+      },
       scales:{
         x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'}},
         y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'},beginAtZero:true}
@@ -634,7 +736,7 @@ function renderTrend(){
   });
 }
 
-// ── CPL CHART — сравнение каналов ──
+// ── CPL CHART — сравнение каналов (grouped bar, одна ось) ──
 function renderCPL(){
   if(cplChart)cplChart.destroy();
   cplChart=new Chart(document.getElementById('cplChart'),{
@@ -642,22 +744,26 @@ function renderCPL(){
     data:{
       labels:['Апрель','Май','Июнь'],
       datasets:[
-        {label:'CPL — 100Staff',data:[D.apr.cpl,D.may.cpl,D.jun.cpl],backgroundColor:'rgba(26,127,116,.25)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:5,yAxisID:'y'},
-        {label:'CPL — PROStaff',data:[null,D.may.proCPL,D.jun.proCPL],backgroundColor:'rgba(124,58,237,.2)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:5,yAxisID:'y'},
-        {label:'Лиды 100Staff',data:[D.apr.leads,D.may.leads,D.jun.leads],type:'line',borderColor:'#1a7f74',borderDash:[4,3],pointBackgroundColor:'#1a7f74',pointRadius:4,tension:.3,fill:false,yAxisID:'y2'},
-        {label:'Лиды PROStaff',data:[null,D.may.proLeads,D.jun.proLeads],type:'line',borderColor:'#7c3aed',borderDash:[4,3],pointBackgroundColor:'#7c3aed',pointRadius:4,tension:.3,fill:false,yAxisID:'y2'},
+        {label:'CPL 100Staff, ₽',data:[D.apr.cpl,D.may.cpl,D.jun.cpl],
+         backgroundColor:'rgba(26,127,116,.22)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:5,
+         datalabels:{anchor:'end',align:'top',color:'#1a7f74',font:{size:10,weight:'600'},formatter:v=>v?Math.round(v)+'₽':''}},
+        {label:'CPL PROStaff, ₽',data:[D.apr.proCPL,D.may.proCPL,D.jun.proCPL],
+         backgroundColor:'rgba(124,58,237,.18)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:5,
+         datalabels:{anchor:'end',align:'top',color:'#7c3aed',font:{size:10,weight:'600'},formatter:v=>v?Math.round(v)+'₽':''}},
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20}},
       plugins:{
         legend:{labels:{color:'#94a3b8',font:{size:10,family:'Inter'},boxWidth:8,padding:8}},
-        tooltip:{callbacks:{label:c=>c.datasetIndex<2?` ${c.dataset.label}: ${c.parsed.y?.toFixed(0)} ₽`:` ${c.dataset.label}: ${c.parsed.y} лидов`}}
+        datalabels:{display:true},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toFixed(0)} ₽`}}
       },
       scales:{
         x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'}},
-        y:{position:'left',ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+' ₽'},grid:{color:'#f1f5f9'},min:60,title:{display:true,text:'CPL, ₽',color:'#94a3b8',font:{size:9}}},
-        y2:{position:'right',ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false},title:{display:true,text:'Лиды',color:'#94a3b8',font:{size:9}},beginAtZero:true}
+        y:{ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+' ₽'},grid:{color:'#f1f5f9'},beginAtZero:true,
+           title:{display:true,text:'Стоимость лида (CPL), ₽',color:'#94a3b8',font:{size:9}}}
       }
     }
   });
@@ -768,6 +874,32 @@ const INS_CH={
     all:'<strong>PROStaff</strong> дешевле по CPL в мае (81 ₽), но качество лидов ниже 100Staff. Потенциал есть при улучшении квалификации.'
   }
 };
+// ── SUMMARY CARD ──
+function renderSummary(){
+  const d=D[curMonth]||D.jun;
+  const cd=getChData(d);
+  const prev=curMonth==='may'?D.apr:curMonth==='jun'?D.may:null;
+  const prevCd=prev?getChData(prev):null;
+
+  let text='';
+  if(curMonth==='all'){
+    const total_leads=cd.leads, total_sales=cd.sales;
+    const best = D.may.leads>D.apr.leads&&D.may.leads>D.jun.leads?'май':D.apr.leads>D.jun.leads?'апрель':'июнь';
+    text=`За апрель–июнь получено <strong>${total_leads} лидов</strong> и закрыто <strong>${total_sales} сделок</strong>. Лучший месяц по трафику — <strong>${best}</strong>.`;
+  } else if(prevCd){
+    const ldDiff=cd.leads-prevCd.leads;
+    const slDiff=cd.sales-prevCd.sales;
+    const ldSign=ldDiff>0?'+':'';
+    const slSign=slDiff>0?'+':'';
+    const trend=ldDiff>0?'вырос':'снизился';
+    const sCPL=cd.cpl?`CPL ${Math.round(cd.cpl)} ₽`:'';
+    text=`Поток лидов <strong>${trend}</strong> на ${ldSign}${ldDiff} относительно прошлого месяца (${prevCd.leads}→${cd.leads}). Сделок: <strong>${slSign}${slDiff}</strong> (${prevCd.sales}→${cd.sales}). ${sCPL}.`;
+  } else {
+    text=`Апрель — стартовый месяц в аналитике. Получено <strong>${cd.leads} лидов</strong>, закрыто <strong>${cd.sales} сделок</strong>. CPL: ${Math.round(cd.cpl||0)} ₽.`;
+  }
+  document.getElementById('summary-text').innerHTML=text;
+}
+
 function genAIInsight(){
   const d=D[curMonth]==='all'?D.all:D[curMonth]||D.jun;
   const cd=getChData(d);
@@ -817,12 +949,12 @@ function renderInsights(){
 function setMonth(m){
   curMonth=m;
   ['apr','may','jun','all'].forEach(k=>document.getElementById('tab-'+k).classList.toggle('active',k===m));
-  renderKPI();renderFunnel();renderTrend();renderDirs();renderInsights();
+  renderSummary();renderKPI();renderFunnel();renderTrend();renderDirs();renderInsights();
 }
 function setChannel(ch){
   curChannel=ch;
   ['all','avito','profi'].forEach(k=>document.getElementById('ch-tab-'+k).classList.toggle('active',k===ch));
-  renderKPI();renderFunnel();renderDirs();renderInsights();
+  renderSummary();renderKPI();renderFunnel();renderDirs();renderInsights();
 }
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
@@ -834,7 +966,7 @@ function closeSidebar(){
 }
 
 // ── INIT ──
-function renderAll(){renderKPI();renderFunnel();renderTrend();renderCPL();renderBudget();renderMargin();renderDirs();renderInsights();}
+function renderAll(){renderSummary();renderKPI();renderFunnel();renderTrend();renderCPL();renderBudget();renderMargin();renderDirs();renderInsights();}
 
 window.addEventListener('DOMContentLoaded', async ()=>{
   try {
