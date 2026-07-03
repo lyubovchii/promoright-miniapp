@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Маркетинг — PromoRight · 100Staff</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --teal:    #1a7f74;
+  --teal2:   #2a9d8f;
+  --teal-lt: #e8f5f4;
+  --teal-md: #b2deda;
+  --blue-lt: #eef4fb;
+  --slate:   #334155;
+  --slate2:  #64748b;
+  --slate3:  #94a3b8;
+  --bg:      #f0f4f8;
+  --card:    #ffffff;
+  --border:  #e2e8f0;
+  --text:    #1e293b;
+  --text2:   #475569;
+  --text3:   #94a3b8;
+  --green:   #0d9488;
+  --green-lt:#d1fae5;
+  --red:     #e11d48;
+  --red-lt:  #fee2e2;
+  --warn:    #d97706;
+  --warn-lt: #fef3c7;
+  --neutral-lt: #f1f5f9;
+  --neutral:    #64748b;
+  --sidebar-w: 220px;
+  --sans: 'Inter', sans-serif;
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+}
+
+html,body { height:100%; font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; }
+
+/* ── LAYOUT ── */
+.app { display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top:0; left:0; bottom:0;
+  z-index: 100;
+  transition: transform .25s ease;
+}
+.sidebar-logo {
+  padding: 22px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--teal);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon svg { width:18px;height:18px;fill:#fff; }
+.logo-name { font-size:15px; font-weight:700; color:var(--text); }
+.sidebar-section { padding: 18px 12px 6px; }
+.sidebar-section-label { font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:6px; }
+.nav-item {
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:9px;
+  font-size:13px;font-weight:500;color:var(--text2);
+  cursor:pointer;transition:all .15s;
+  text-decoration:none;
+}
+.nav-item:hover { background:var(--bg); color:var(--text); }
+.nav-item.active { background:var(--teal-lt); color:var(--teal); font-weight:600; }
+.nav-item svg { width:16px;height:16px;flex-shrink:0;opacity:.7; }
+.nav-item.active svg { opacity:1; }
+.sidebar-footer {
+  margin-top:auto;
+  padding:16px 12px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.avatar {
+  width:34px;height:34px;border-radius:50%;
+  background:var(--teal-md);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:var(--teal);
+  flex-shrink:0;
+}
+.user-name { font-size:12px;font-weight:600;color:var(--text); }
+.user-role { font-size:11px;color:var(--text3); }
+
+/* ── MAIN ── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex:1;
+  display:flex;flex-direction:column;
+  min-width:0;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding:16px 24px;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;
+}
+.topbar-left h1 { font-size:18px;font-weight:700;color:var(--text); }
+.topbar-left p  { font-size:12px;color:var(--text3);margin-top:2px; }
+.period-tabs {
+  display:flex;gap:3px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:9px;padding:3px;
+}
+.period-tabs button {
+  font-family:var(--sans);font-size:12px;font-weight:500;
+  padding:5px 13px;border:none;border-radius:6px;
+  cursor:pointer;background:transparent;color:var(--text2);
+  transition:all .15s;
+}
+.period-tabs button.active { background:var(--teal);color:#fff; }
+
+/* ── CONTENT ── */
+.content { padding:20px 24px 32px;display:flex;flex-direction:column;gap:16px; }
+
+/* ── KPI GRID ── */
+.kpi-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.kpi-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 16px 14px;
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.kpi-card::after {
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:var(--accent-line, var(--teal));
+  border-radius:0 0 var(--radius) var(--radius);
+}
+.kpi-eyebrow {
+  font-size:10px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--text3);margin-bottom:10px;
+}
+.kpi-value {
+  font-size:22px;font-weight:700;color:var(--text);line-height:1;
+}
+.kpi-value small { font-size:13px;font-weight:400;color:var(--text3);margin-left:2px; }
+.kpi-delta {
+  display:inline-flex;align-items:center;gap:3px;
+  margin-top:8px;font-size:11px;font-weight:600;
+  padding:3px 7px;border-radius:20px;
+}
+.kpi-delta.up   { background:var(--green-lt);color:#065f46; }
+.kpi-delta.down { background:var(--red-lt);color:var(--red); }
+.kpi-delta.neutral { background:var(--neutral-lt);color:var(--neutral); }
+.kpi-sub { font-size:11px;color:var(--text3);margin-top:4px; }
+
+/* ── CARDS ── */
+.card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px;
+  box-shadow:var(--shadow);
+}
+.card-head {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.card-title {
+  font-size:11px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--text3);
+}
+.card-badge {
+  font-size:10px;font-weight:600;
+  padding:3px 8px;border-radius:20px;
+  background:var(--teal-lt);color:var(--teal);
+}
+
+/* ── TWO-COL ── */
+.two-col { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+
+/* ── CHANNEL TABS ── */
+.ch-tabs { display:flex;gap:4px; }
+.ch-tabs button {
+  font-family:var(--sans);font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:6px;
+  border:1px solid var(--border);
+  cursor:pointer;background:transparent;color:var(--text3);
+  transition:all .15s;
+}
+.ch-tabs button.active { background:var(--teal-lt);border-color:var(--teal-md);color:var(--teal); }
+
+/* ── ВОРОНКА ── */
+.funnel { display:flex;flex-direction:column;gap:5px; }
+.funnel-row { display:flex;align-items:center;gap:8px; }
+.f-label { font-size:11px;color:var(--text2);width:78px;flex-shrink:0;text-align:right; }
+.f-track { flex:1;height:28px;background:var(--bg);border-radius:6px;overflow:hidden;position:relative; }
+.f-bar {
+  height:100%;border-radius:6px;
+  display:flex;align-items:center;padding-left:8px;
+  transition:width .5s cubic-bezier(.25,.8,.25,1);
+}
+.f-val { font-size:12px;font-weight:600;color:var(--teal); }
+.f-pct { font-size:10px;color:var(--text3);width:34px;text-align:right;flex-shrink:0; }
+.f-arrow { font-size:10px;color:var(--border);margin-left:78px;padding:0;line-height:1; }
+
+/* ── CHART WRAP ── */
+.ch-wrap { position:relative;height:200px; }
+.ch-wrap-sm { position:relative;height:170px; }
+
+/* ── BUDGET TABLE ── */
+.brow { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border); }
+.brow:first-child{border-top:none;padding-top:0}
+.brow-label{font-size:12px;color:var(--text2);}
+.brow-nums{display:flex;gap:14px;align-items:baseline;}
+.brow-total{font-size:14px;font-weight:700;color:var(--text);}
+.brow-ret{font-size:11px;color:var(--red);}
+.brow-net{font-size:12px;font-weight:600;color:var(--teal);}
+
+/* ── MARGIN ── */
+.mrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);}
+.mrow:first-child{border-top:none;padding-top:0}
+.mrow-left{width:54px;flex-shrink:0;}
+.mrow-month{font-size:12px;font-weight:600;color:var(--text2);}
+.mrow-note{font-size:10px;color:var(--text3);}
+.mrow-track{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.mrow-bar{height:100%;border-radius:3px;}
+.mrow-val{font-size:14px;font-weight:700;color:var(--teal);min-width:80px;text-align:right;}
+
+/* ── DIR TABLE ── */
+.dir-tbl{width:100%;border-collapse:collapse;}
+.dir-tbl th{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:0 8px 10px;text-align:right;}
+.dir-tbl th:first-child{text-align:left;}
+.dir-tbl td{font-size:12px;color:var(--text2);text-align:right;padding:8px 8px;border-top:1px solid var(--border);}
+.dir-tbl td:first-child{font-size:12px;font-weight:500;color:var(--text);text-align:left;}
+.dir-tbl tr:hover td{background:var(--bg);}
+.pill{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;}
+.pill.good{background:var(--green-lt);color:#065f46;}
+.pill.mid{background:var(--warn-lt);color:var(--warn);}
+.pill.low{background:var(--neutral-lt);color:var(--neutral);}
+
+/* ── INSIGHTS ── */
+.insights{display:grid;gap:8px;}
+.insight{
+  background:var(--teal-lt);
+  border-left:3px solid var(--teal);
+  border-radius:8px;
+  padding:12px 14px;
+  font-size:12px;color:var(--text2);line-height:1.6;
+}
+.insight strong{color:var(--text);font-weight:600;}
+
+/* ── NOTE ── */
+.fnote{font-size:10px;color:var(--text3);margin-top:12px;padding-top:10px;border-top:1px solid var(--border);}
+
+/* ── HAMBURGER ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px;}
+.hamburger svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:90;}
+
+/* ── FOOTER ── */
+footer{
+  margin-top:auto;
+  padding:14px 24px;border-top:1px solid var(--border);
+  font-size:10px;color:var(--text3);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;
+  background:var(--card);
+}
+
+/* ════════════════════════════════
+   MOBILE FIRST — breakpoints
+   ════════════════════════════════ */
+@media (max-width: 900px) {
+  .two-col { grid-template-columns:1fr; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr); }
+}
+
+@media (max-width: 640px) {
+  :root { --sidebar-w: 220px; }
+
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: 4px 0 20px rgba(0,0,0,.12);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .overlay.open { display:block; }
+  .hamburger { display:block; }
+  .main { margin-left:0; }
+
+  .topbar { padding:12px 16px; }
+  .topbar-left h1 { font-size:15px; }
+  .content { padding:14px 16px 28px; gap:12px; }
+
+  .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .kpi-value { font-size:17px; }
+  .kpi-card { padding:14px 12px 12px; }
+
+  .card { padding:16px; }
+  .period-tabs button { font-size:11px;padding:4px 9px; }
+}
+
+@media (max-width: 380px) {
+  .kpi-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 20 20"><path d="M10 2L3 7v6l7 5 7-5V7L10 2z"/></svg>
+      </div>
+      <span class="logo-name">PromoRight</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Навигация</div>
+      <a class="nav-item active">
+        <svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+        Обзор
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10h14M3 5h14M3 15h8"/></svg>
+        Каналы
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+        Клиенты
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Прочее</div>
+      <a class="nav-item">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>
+        Настройки
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 7v.5"/></svg>
+        Справка
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar">МК</div>
+      <div>
+        <div class="user-name">Маркетолог</div>
+        <div class="user-role">PromoRight · 100Staff</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Меню">
+          <svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-left">
+          <h1>Маркетинг — воронка</h1>
+          <p>Профи.ру · Аккаунт 1 и Аккаунт 2 · апрель–июнь 2026</p>
+        </div>
+      </div>
+      <div class="period-tabs">
+        <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
+        <button onclick="setMonth('may')" id="tab-may">Май</button>
+        <button onclick="setMonth('jun')" id="tab-jun" class="active">Июн</button>
+        <button onclick="setMonth('all')" id="tab-all">Всё</button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- KPI -->
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- ВОРОНКА + ТРЕНД -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Воронка</span>
+            <div class="ch-tabs">
+              <button onclick="setCh('all')" id="ch-all" class="active">Общий</button>
+              <button onclick="setCh('100staff')" id="ch-100staff">Акк. 1</button>
+              <button onclick="setCh('prostaff')" id="ch-prostaff">Акк. 2</button>
+            </div>
+          </div>
+          <div class="funnel" id="funnel"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Динамика по неделям</span>
+            <span class="card-badge">лиды + продажи</span>
+          </div>
+          <div class="ch-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- БЮДЖЕТ + МАРЖА -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Бюджет и возвраты</span></div>
+          <div id="budget-block"></div>
+          <div class="fnote">Возвраты — средства за неиспользованные отклики (клиент не просмотрел)</div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Маржа</span>
+            <span class="card-badge">чистая прибыль</span>
+          </div>
+          <div id="margin-block"></div>
+        </div>
+      </div>
+
+      <!-- CPL + НАПРАВЛЕНИЯ -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><span class="card-title">CPL по месяцам и каналам</span></div>
+          <div class="ch-wrap-sm"><canvas id="cplChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Направления</span></div>
+          <table class="dir-tbl">
+            <thead><tr>
+              <th>Направление</th><th>Заявки</th><th>Лиды</th><th>Прод.</th><th>CVR</th>
+            </tr></thead>
+            <tbody id="dir-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ИНСАЙТЫ -->
+      <div class="card">
+        <div class="card-head"><span class="card-title">Ключевые инсайты</span></div>
+        <div class="insights" id="insights"></div>
+      </div>
+
+    </div><!-- /content -->
+
+    <footer>
+      <span>Данные: апрель–июнь 2026 · PromoRight / Профи.ру (Аккаунт 1 — 100Staff, Аккаунт 2 — ProStaff)</span>
+      <span>Апрельская маржа — оценочная (~130 000 ₽)</span>
+    </footer>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── TELEGRAM WEB APP INIT ──
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+// ── DATA ──────────────────────────────────────
+const D = {
+  apr:{
+    cpl:149.80, responses:223, leads:60, qualLeads:45, sales:16,
+    budget:9085, returns:97, margin:130000, marginEst:true,
+    proResponses:0,proLeads:0,proQualLeads:0,proSales:0,proBudget:0,proCPL:null,
+    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[5,15,17,17,6],sales:[1,5,8,2,0]}
+  },
+  may:{
+    cpl:100.69, responses:185, leads:75, qualLeads:44, sales:14,
+    budget:7685, returns:133, margin:30501, marginEst:false,
+    proResponses:127,proLeads:39,proQualLeads:19,proSales:8,proBudget:3188,proCPL:81.74,
+    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[2,15,28,12,18],sales:[0,5,5,3,1]}
+  },
+  jun:{
+    cpl:100.26, responses:132, leads:47, qualLeads:28, sales:11,
+    budget:4778, returns:66, margin:26505, marginEst:false,
+    proResponses:112,proLeads:24,proQualLeads:7,proSales:7,proBudget:2858,proCPL:119.08,
+    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[10,12,14,9,2],sales:[1,3,4,3,0]}
+  }
+};
+D.all = {
+  cpl:+((D.apr.budget+D.may.budget+D.jun.budget)/(D.apr.leads+D.may.leads+D.jun.leads)).toFixed(2),
+  responses:D.apr.responses+D.may.responses+D.jun.responses,
+  leads:D.apr.leads+D.may.leads+D.jun.leads,
+  qualLeads:D.apr.qualLeads+D.may.qualLeads+D.jun.qualLeads,
+  sales:D.apr.sales+D.may.sales+D.jun.sales,
+  budget:D.apr.budget+D.may.budget+D.jun.budget,
+  returns:D.apr.returns+D.may.returns+D.jun.returns,
+  margin:D.apr.margin+D.may.margin+D.jun.margin, marginEst:true,
+  proResponses:D.may.proResponses+D.jun.proResponses,
+  proLeads:D.may.proLeads+D.jun.proLeads,
+  proQualLeads:D.may.proQualLeads+D.jun.proQualLeads,
+  proSales:D.may.proSales+D.jun.proSales,
+  proBudget:D.may.proBudget+D.jun.proBudget,
+  proCPL:+((D.may.proBudget+D.jun.proBudget)/(D.may.proLeads+D.jun.proLeads)).toFixed(2),
+  weeks:{
+    labels:['АН1','АН2','АН3','АН4','АН5','МН1','МН2','МН3','МН4','МН5','ИН1','ИН2','ИН3','ИН4','ИН5'],
+    leads:[...D.apr.weeks.leads,...D.may.weeks.leads,...D.jun.weeks.leads],
+    sales:[...D.apr.weeks.sales,...D.may.weeks.sales,...D.jun.weeks.sales]
+  }
+};
+
+let curMonth='jun', curCh='all';
+let tChart=null, cplChart=null;
+
+// ── HELPERS ──
+const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+function getDelta(cur,prev){
+  if(!prev||prev===0)return null;
+  const v=((cur-prev)/prev*100).toFixed(1);
+  return{val:v,up:parseFloat(v)>0};
+}
+
+// ── KPI ──
+// Логика цветов:
+// CPL: падение = хорошо (зелёный), рост = плохо (красный) — инвертируем
+// Бюджет нетто: изменение нейтральное (серый)
+// Продажи, Маржа: рост = зелёный, падение = красный
+// Отклики: рост = зелёный (больше охват)
+// Конверсия: нет дельты, просто значение
+function renderKPI(){
+  const d=D[curMonth];
+  const prev=curMonth==='may'?D.apr:curMonth==='jun'?D.may:null;
+  const tl=d.leads+(d.proLeads||0);
+  const ts=d.sales+(d.proSales||0);
+  const tb=d.budget+(d.proBudget||0);
+  const net=tb-d.returns;
+  const tr=d.responses+(d.proResponses||0);
+  const cvr=pct(ts,tr);
+
+  const prevTL=prev?(prev.leads+(prev.proLeads||0)):null;
+  const prevTS=prev?(prev.sales+(prev.proSales||0)):null;
+  const prevTB=prev?(prev.budget+(prev.proBudget||0)):null;
+  const prevNet=prev?(prevTB-prev.returns):null;
+  const prevTR=prev?(prev.responses+(prev.proResponses||0)):null;
+
+  // дельта бюджета — нейтральная
+  const dBudget=prev?getDelta(net,prevNet):null;
+  // дельта CPL — инвертируем: падение CPL = хорошо
+  const dCPL=prev&&prev.cpl?getDelta(d.cpl,prev.cpl):null;
+
+  const cards=[
+    {
+      label:'Бюджет (нетто)',
+      val:fmt(net)+' ₽',
+      sub:`возвраты: −${fmt(d.returns)} ₽`,
+      delta:dBudget,
+      deltaMode:'neutral', // всегда нейтральный
+      line:'#94a3b8'
+    },
+    {
+      label:'Продажи',
+      val:ts,
+      sub:`лиды: ${tl}`,
+      delta:prev?getDelta(ts,prevTS):null,
+      deltaMode:'standard',
+      line:'#1a7f74'
+    },
+    {
+      label:'Маржа',
+      val:d.margin?fmt(d.margin)+' ₽':'—',
+      sub:d.marginEst?'~ оценочная':'фактическая',
+      delta:prev&&prev.margin?getDelta(d.margin,prev.margin):null,
+      deltaMode:'standard',
+      line:'#7c3aed'
+    },
+    {
+      label:'CPL (Акк. 1)',
+      val:d.cpl?d.cpl.toFixed(0)+' ₽':'—',
+      sub:'стоимость лида',
+      delta:dCPL,
+      deltaMode:'inverted', // падение = хорошо
+      line:'#d97706'
+    },
+    {
+      label:'Конверсия',
+      val:cvr,
+      sub:'отклик → продажа',
+      delta:null,
+      deltaMode:'standard',
+      line:'#0d9488'
+    },
+    {
+      label:'Отклики',
+      val:fmt(tr),
+      sub:'Акк. 1 + Акк. 2 (Профи.ру)',
+      delta:prev?getDelta(tr,prevTR):null,
+      deltaMode:'standard',
+      line:'#2563eb'
+    },
+  ];
+
+  document.getElementById('kpi-grid').innerHTML=cards.map(c=>{
+    let deltHtml='';
+    if(c.delta){
+      let cls;
+      if(c.deltaMode==='neutral'){
+        cls='neutral';
+      } else if(c.deltaMode==='inverted'){
+        // падение CPL = зелёный; рост CPL = красный
+        cls=c.delta.up?'down':'up';
+      } else {
+        cls=c.delta.up?'up':'down';
+      }
+      const arrow=c.delta.up?'↑':'↓';
+      deltHtml=`<div class="kpi-delta ${cls}">${arrow} ${Math.abs(c.delta.val)}%</div>`;
+    }
+    return`<div class="kpi-card" style="--accent-line:${c.line}">
+      <div class="kpi-eyebrow">${c.label}</div>
+      <div class="kpi-value">${c.val}</div>
+      ${deltHtml}
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── FUNNEL ──
+function renderFunnel(){
+  const d=D[curMonth];
+  let stages;
+  if(curCh==='100staff'){
+    stages=[
+      {l:'Отклики',v:d.responses,c:'#1a7f74'},
+      {l:'Лиды',v:d.leads,c:'#2a9d8f',cvr:pct(d.leads,d.responses)},
+      {l:'Квал.',v:d.qualLeads,c:'#0d9488',cvr:pct(d.qualLeads,d.leads)},
+      {l:'Продажи',v:d.sales,c:'#065f46',cvr:pct(d.sales,d.qualLeads)},
+    ];
+  } else if(curCh==='prostaff'){
+    const pr=d.proResponses||0,pl=d.proLeads||0,pq=d.proQualLeads||0,ps=d.proSales||0;
+    stages=[
+      {l:'Отклики',v:pr,c:'#7c3aed'},
+      {l:'Лиды',v:pl,c:'#8b5cf6',cvr:pct(pl,pr)},
+      {l:'Квал.',v:pq,c:'#a78bfa',cvr:pct(pq,pl)},
+      {l:'Продажи',v:ps,c:'#4c1d95',cvr:pct(ps,pq)},
+    ];
+  } else {
+    const tr=d.responses+(d.proResponses||0);
+    const tl=d.leads+(d.proLeads||0);
+    const tq=d.qualLeads+(d.proQualLeads||0);
+    const ts=d.sales+(d.proSales||0);
+    stages=[
+      {l:'Отклики',v:tr,c:'#1a7f74'},
+      {l:'Лиды',v:tl,c:'#2a9d8f',cvr:pct(tl,tr)},
+      {l:'Квал.',v:tq,c:'#0d9488',cvr:pct(tq,tl)},
+      {l:'Продажи',v:ts,c:'#065f46',cvr:pct(ts,tq)},
+    ];
+  }
+  const max=stages[0].v||1;
+  document.getElementById('funnel').innerHTML=stages.map((s,i)=>`
+    ${i>0?`<div class="f-arrow">↳ ${s.cvr}</div>`:''}
+    <div class="funnel-row">
+      <div class="f-label">${s.l}</div>
+      <div class="f-track">
+        <div class="f-bar" style="width:${Math.max(s.v/max*100,2)}%;background:${s.c}18;border:1px solid ${s.c}40">
+          <span class="f-val" style="color:${s.c}">${s.v}</span>
+        </div>
+      </div>
+      <div class="f-pct">${i===0?'':''}</div>
+    </div>
+  `).join('');
+}
+
+// ── TREND CHART ──
+function renderTrend(){
+  if(tChart)tChart.destroy();
+  const d=D[curMonth];
+  tChart=new Chart(document.getElementById('trendChart'),{
+    type:'bar',
+    data:{
+      labels:d.weeks.labels,
+      datasets:[
+        {label:'Лиды',data:d.weeks.leads,backgroundColor:'rgba(26,127,116,.15)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:4,order:2},
+        {label:'Продажи',data:d.weeks.sales,type:'line',borderColor:'#0d9488',backgroundColor:'rgba(13,148,136,.08)',pointBackgroundColor:'#0d9488',pointRadius:4,tension:.4,fill:true,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11,family:'Inter'},boxWidth:10,padding:10}}},
+      scales:{
+        x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'}},
+        y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'},beginAtZero:true}
+      }
+    }
+  });
+}
+
+// ── CPL CHART ──
+function renderCPL(){
+  if(cplChart)cplChart.destroy();
+  cplChart=new Chart(document.getElementById('cplChart'),{
+    type:'bar',
+    data:{
+      labels:['Апрель','Май','Июнь'],
+      datasets:[
+        {label:'Аккаунт 1 — 100Staff',data:[D.apr.cpl,D.may.cpl,D.jun.cpl],backgroundColor:'rgba(26,127,116,.2)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:5},
+        {label:'Аккаунт 2 — ProStaff',data:[null,D.may.proCPL,D.jun.proCPL],backgroundColor:'rgba(124,58,237,.15)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:5}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#94a3b8',font:{size:11,family:'Inter'},boxWidth:10,padding:10}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toFixed(0)} ₽`}}
+      },
+      scales:{
+        x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'}},
+        y:{ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+' ₽'},grid:{color:'#f1f5f9'},min:60}
+      }
+    }
+  });
+}
+
+// ── BUDGET ──
+function renderBudget(){
+  const months=[{l:'Апрель',k:'apr'},{l:'Май',k:'may'},{l:'Июнь',k:'jun'}];
+  document.getElementById('budget-block').innerHTML=months.map(m=>{
+    const d=D[m.k];
+    const total=d.budget+(d.proBudget||0);
+    const net=total-d.returns;
+    const rp=(d.returns/total*100).toFixed(0);
+    return`<div class="brow">
+      <span class="brow-label">${m.l}</span>
+      <div class="brow-nums">
+        <span class="brow-total">${fmt(total)} ₽</span>
+        <span class="brow-ret">−${fmt(d.returns)} ₽ (${rp}%)</span>
+        <span class="brow-net">= ${fmt(net)} ₽</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MARGIN ──
+function renderMargin(){
+  const months=[
+    {l:'Апрель',k:'apr',c:'#7c3aed'},
+    {l:'Май',k:'may',c:'#1a7f74'},
+    {l:'Июнь',k:'jun',c:'#2563eb'},
+  ];
+  const maxM=Math.max(...months.map(m=>D[m.k].margin));
+  document.getElementById('margin-block').innerHTML=months.map(m=>{
+    const d=D[m.k];
+    const w=Math.round(d.margin/maxM*100);
+    return`<div class="mrow">
+      <div class="mrow-left">
+        <div class="mrow-month">${m.l}</div>
+        ${d.marginEst?'<div class="mrow-note">~оценка</div>':''}
+      </div>
+      <div class="mrow-track"><div class="mrow-bar" style="width:${w}%;background:${m.c}"></div></div>
+      <div class="mrow-val" style="color:${m.c}">${fmt(d.margin)} ₽</div>
+    </div>`;
+  }).join('')+`<div class="fnote">Апрельская маржа — оценка по крупному заказу (~130 000 ₽)</div>`;
+}
+
+// ── DIRECTIONS ──
+const DIRS=[
+  {l:'Промо-персонал',apps:[167,162,94],leads:[45,69,36],sales:[14,14,10]},
+  {l:'Листовки Профи.ру',apps:[15,2,2],leads:[6,1,1],sales:[0,0,0]},
+  {l:'Массовка',apps:[4,3,0],leads:[1,2,0],sales:[1,0,0]},
+  {l:'Манекенщицы',apps:[4,3,2],leads:[2,1,0],sales:[1,0,0]},
+  {l:'Лофты',apps:[0,0,0],leads:[0,0,0],sales:[0,0,0]},
+];
+function renderDirs(){
+  const mi=curMonth==='apr'?0:curMonth==='may'?1:curMonth==='jun'?2:null;
+  document.getElementById('dir-body').innerHTML=DIRS.map(d=>{
+    let a,l,s;
+    if(mi!==null){a=d.apps[mi];l=d.leads[mi];s=d.sales[mi];}
+    else{a=d.apps.reduce((x,y)=>x+y,0);l=d.leads.reduce((x,y)=>x+y,0);s=d.sales.reduce((x,y)=>x+y,0);}
+    const cvr=l?Math.round(s/l*100):0;
+    const pc=cvr>=20?'good':cvr>=10?'mid':'low';
+    return`<tr><td>${d.l}</td><td>${a}</td><td>${l}</td><td>${s}</td><td><span class="pill ${pc}">${cvr}%</span></td></tr>`;
+  }).join('');
+}
+
+// ── INSIGHTS ──
+const INS={
+  apr:[
+    '<strong>CPL 149 ₽</strong> — самый высокий за квартал. При этом конверсия лид→продажа максимальная (75%). Лиды дорогие, но качественные.',
+    '<strong>Возвраты 97 ₽ из 9 085 ₽</strong> (11%) — пик за квартал. Часть аудитории не просматривала отклики — стоит пересмотреть время публикации.',
+    '<strong>Аккаунт 2 не работал</strong> в апреле. Сравнение аккаунтов Профи.ру доступно с мая.',
+  ],
+  may:[
+    '<strong>Лучший месяц по объёму</strong>: 75 лидов Акк. 1 + 39 Акк. 2 = 114 суммарно. CPL снизился до 100 ₽.',
+    '<strong>Акк. 2 CPL 81 ₽</strong> — дешевле Акк. 1 (100 ₽). Но квалификация лидов ниже (49% vs 59%). Аккаунт перспективен при работе над качеством.',
+    '<strong>Маржа 30 501 ₽</strong> при 22 продажах. Средняя маржа на продажу ≈ 1 387 ₽.',
+  ],
+  jun:[
+    '<strong>Просадка объёма</strong>: лиды −37% к маю. Бюджет снизился — вероятная причина.',
+    '<strong>CPL стабилен</strong> (100 ₽), но маржа упала с 30 501 до 26 505 ₽. Снижается качество лидов.',
+    '<strong>Листовки и Массовка</strong> без продаж второй месяц. Рекомендуется пересмотр или пауза.',
+  ],
+  all:[
+    '<strong>Промо-персонал</strong> — единственное стабильное направление. Концентрация бюджета здесь даст лучший ROI.',
+    '<strong>Оптимальный CPL</strong> — май: 100 ₽ (Акк. 1), 81 ₽ (Акк. 2). Ориентир для планирования бюджета.',
+    '<strong>Возвраты в апреле</strong> аномально высокие (11%). В мае–июне снизились до 7–8% — тренд позитивный.',
+  ]
+};
+function renderInsights(){
+  document.getElementById('insights').innerHTML=(INS[curMonth]||INS.all).map(t=>`<div class="insight">${t}</div>`).join('');
+}
+
+// ── CONTROLS ──
+function setMonth(m){
+  curMonth=m;
+  ['apr','may','jun','all'].forEach(k=>document.getElementById('tab-'+k).classList.toggle('active',k===m));
+  renderKPI();renderFunnel();renderTrend();renderDirs();renderInsights();
+}
+function setCh(ch){
+  curCh=ch;
+  ['all','100staff','prostaff'].forEach(k=>document.getElementById('ch-'+k).classList.toggle('active',k===ch));
+  renderFunnel();
+}
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  renderKPI();renderFunnel();renderTrend();renderCPL();renderBudget();renderMargin();renderDirs();renderInsights();
+});
+</script>
+</body>
+</html>
