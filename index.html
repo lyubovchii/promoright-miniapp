@@ -411,7 +411,7 @@ footer{
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="pdf-btn" onclick="(tg&&tg.openLink?tg.openLink(location.href):window.open(location.href,'_blank'))">🌐 В браузере</button>
+          <button class="pdf-btn" id="action-btn"></button>
           <div class="period-tabs">
             <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
             <button onclick="setMonth('may')" id="tab-may">Май</button>
@@ -520,6 +520,19 @@ if (tg) { tg.ready(); tg.expand(); }
 
 // ── REGISTER DATALABELS ──
 if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+
+// ── SMART ACTION BUTTON ──
+function initActionBtn(){
+  const btn=document.getElementById('action-btn');
+  if(!btn) return;
+  if(tg){
+    btn.textContent='🌐 В браузере';
+    btn.onclick=()=>tg.openLink(location.href);
+  } else {
+    btn.textContent='📸 Скриншот';
+    btn.onclick=exportSnapshot;
+  }
+}
 
 // ── PLAN DATA (из Google Sheets) ──
 const PLAN = {
@@ -1029,6 +1042,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
       }
     }
   } catch(e){ console.warn('data.json fetch failed, using static data', e); }
+  initActionBtn();
   renderAll();
 });
 </script>
