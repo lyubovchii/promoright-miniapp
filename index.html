@@ -524,10 +524,10 @@ if(window.ChartDataLabels) Chart.register(ChartDataLabels);
 
 // ── PLAN DATA (из Google Sheets) ──
 const PLAN = {
-  apr:{leads:80, qualLeads:75, responses:210, sales:null},
-  may:{leads:80, qualLeads:50, responses:200, sales:null},
-  jun:{leads:40, qualLeads:20, responses:100, sales:null},
-  all:{leads:200, qualLeads:145, responses:510, sales:null},
+  apr:{leads:80, qualLeads:75, responses:210, sales:12},
+  may:{leads:80, qualLeads:50, responses:200, sales:15},
+  jun:{leads:40, qualLeads:20, responses:100, sales:8},
+  all:{leads:200, qualLeads:145, responses:510, sales:35},
 };
 
 // ── TERMS GLOSSARY ──
@@ -671,7 +671,8 @@ function renderKPI(){
 
   const cards=[
     {label:'Бюджет (нетто)',val:fmt(net)+' ₽',sub:`возвраты: −${fmt(cd.returns)} ₽`,delta:dBudget,deltaMode:'neutral',line:'#94a3b8',term:'Бюджет',plan:''},
-    {label:'Продажи',val:cd.sales,sub:`лиды: ${cd.leads}`,delta:prevCd?getDelta(cd.sales,prevCd.sales):null,deltaMode:'standard',line:'#1a7f74',term:null,plan:planBar(cd.leads,planLeads)},
+    {label:'Лиды',val:cd.leads,sub:'заинтересованные клиенты',delta:prevCd?getDelta(cd.leads,prevCd.leads):null,deltaMode:'standard',line:'#2563eb',term:null,plan:planBar(cd.leads,planLeads)},
+    {label:'Продажи',val:cd.sales,sub:'закрытые сделки',delta:prevCd?getDelta(cd.sales,prevCd.sales):null,deltaMode:'standard',line:'#1a7f74',term:null,plan:planBar(cd.sales,planM.sales||null)},
     {label:'Маржа',val:cd.margin?fmt(cd.margin)+' ₽':'—',sub:cd.marginEst?'~ оценочная':cd.margin?'фактическая':'н/д',delta:prevCd&&prevCd.margin?getDelta(cd.margin,prevCd.margin):null,deltaMode:'standard',line:'#7c3aed',term:'Маржа',plan:''},
     {label:cplLabel,val:cd.cpl?cd.cpl.toFixed(0)+' ₽':'—',sub:'стоимость лида',delta:dCPL,deltaMode:'inverted',line:'#d97706',term:'CPL',plan:''},
     {label:'CPS',val:cps,sub:'стоимость продажи',delta:dCPS,deltaMode:'inverted',line:'#e11d48',term:'CPS',plan:''},
