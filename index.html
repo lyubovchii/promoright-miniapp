@@ -347,26 +347,6 @@ footer{
         <svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
         Обзор
       </a>
-      <a class="nav-item">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10h14M3 5h14M3 15h8"/></svg>
-        Каналы
-      </a>
-      <a class="nav-item">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
-        Клиенты
-      </a>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Прочее</div>
-      <a class="nav-item">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>
-        Настройки
-      </a>
-      <a class="nav-item">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 7v.5"/></svg>
-        Справка
-      </a>
     </div>
 
     <div class="sidebar-footer">
@@ -392,11 +372,18 @@ footer{
           <p>Профи.ру · Аккаунт 1 и Аккаунт 2 · апрель–июнь 2026</p>
         </div>
       </div>
-      <div class="period-tabs">
-        <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
-        <button onclick="setMonth('may')" id="tab-may">Май</button>
-        <button onclick="setMonth('jun')" id="tab-jun" class="active">Июн</button>
-        <button onclick="setMonth('all')" id="tab-all">Всё</button>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <div class="period-tabs">
+          <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
+          <button onclick="setMonth('may')" id="tab-may">Май</button>
+          <button onclick="setMonth('jun')" id="tab-jun" class="active">Июн</button>
+          <button onclick="setMonth('all')" id="tab-all">Всё</button>
+        </div>
+        <div class="period-tabs">
+          <button onclick="setChannel('all')" id="ch-tab-all" class="active">Все</button>
+          <button onclick="setChannel('avito')" id="ch-tab-avito">Авито</button>
+          <button onclick="setChannel('profi')" id="ch-tab-profi">Профи.ру</button>
+        </div>
       </div>
     </div>
 
@@ -411,11 +398,6 @@ footer{
         <div class="card">
           <div class="card-head">
             <span class="card-title">Воронка</span>
-            <div class="ch-tabs">
-              <button onclick="setCh('all')" id="ch-all" class="active">Общий</button>
-              <button onclick="setCh('100staff')" id="ch-100staff">Акк. 1</button>
-              <button onclick="setCh('prostaff')" id="ch-prostaff">Акк. 2</button>
-            </div>
           </div>
           <div class="funnel" id="funnel"></div>
         </div>
@@ -525,7 +507,7 @@ D.all = {
   }
 };
 
-let curMonth='jun', curCh='all';
+let curMonth='jun', curCh='all', curChannel='all';
 let tChart=null, cplChart=null;
 
 // ── HELPERS ──
@@ -537,83 +519,38 @@ function getDelta(cur,prev){
   return{val:v,up:parseFloat(v)>0};
 }
 
+// ── CHANNEL DATA HELPER ──
+function getChData(d){
+  if(curChannel==='avito'){
+    return{responses:d.responses,leads:d.leads,qualLeads:d.qualLeads,sales:d.sales,budget:d.budget,returns:d.returns,margin:d.margin,marginEst:d.marginEst,cpl:d.cpl};
+  } else if(curChannel==='profi'){
+    return{responses:d.proResponses||0,leads:d.proLeads||0,qualLeads:d.proQualLeads||0,sales:d.proSales||0,budget:d.proBudget||0,returns:0,margin:null,marginEst:false,cpl:d.proCPL};
+  } else {
+    return{responses:d.responses+(d.proResponses||0),leads:d.leads+(d.proLeads||0),qualLeads:d.qualLeads+(d.proQualLeads||0),sales:d.sales+(d.proSales||0),budget:d.budget+(d.proBudget||0),returns:d.returns,margin:d.margin,marginEst:d.marginEst,cpl:d.cpl};
+  }
+}
+
 // ── KPI ──
-// Логика цветов:
-// CPL: падение = хорошо (зелёный), рост = плохо (красный) — инвертируем
-// Бюджет нетто: изменение нейтральное (серый)
-// Продажи, Маржа: рост = зелёный, падение = красный
-// Отклики: рост = зелёный (больше охват)
-// Конверсия: нет дельты, просто значение
 function renderKPI(){
   const d=D[curMonth];
   const prev=curMonth==='may'?D.apr:curMonth==='jun'?D.may:null;
-  const tl=d.leads+(d.proLeads||0);
-  const ts=d.sales+(d.proSales||0);
-  const tb=d.budget+(d.proBudget||0);
-  const net=tb-d.returns;
-  const tr=d.responses+(d.proResponses||0);
-  const cvr=pct(ts,tr);
-
-  const prevTL=prev?(prev.leads+(prev.proLeads||0)):null;
-  const prevTS=prev?(prev.sales+(prev.proSales||0)):null;
-  const prevTB=prev?(prev.budget+(prev.proBudget||0)):null;
-  const prevNet=prev?(prevTB-prev.returns):null;
-  const prevTR=prev?(prev.responses+(prev.proResponses||0)):null;
-
-  // дельта бюджета — нейтральная
+  const cd=getChData(d);
+  const prevCd=prev?getChData(prev):null;
+  const net=cd.budget-cd.returns;
+  const prevNet=prevCd?(prevCd.budget-prevCd.returns):null;
+  const cvr=pct(cd.sales,cd.responses);
   const dBudget=prev?getDelta(net,prevNet):null;
-  // дельта CPL — инвертируем: падение CPL = хорошо
-  const dCPL=prev&&prev.cpl?getDelta(d.cpl,prev.cpl):null;
+  const dCPL=prevCd&&prevCd.cpl?getDelta(cd.cpl,prevCd.cpl):null;
+  const cplLabel=curChannel==='profi'?'CPL (Профи.ру)':curChannel==='avito'?'CPL (Авито)':'CPL (Авито)';
+  const rspLabel=curChannel==='profi'?'Отклики (Профи.ру)':curChannel==='avito'?'Отклики (Авито)':'Отклики (все)';
 
   const cards=[
-    {
-      label:'Бюджет (нетто)',
-      val:fmt(net)+' ₽',
-      sub:`возвраты: −${fmt(d.returns)} ₽`,
-      delta:dBudget,
-      deltaMode:'neutral', // всегда нейтральный
-      line:'#94a3b8'
-    },
-    {
-      label:'Продажи',
-      val:ts,
-      sub:`лиды: ${tl}`,
-      delta:prev?getDelta(ts,prevTS):null,
-      deltaMode:'standard',
-      line:'#1a7f74'
-    },
-    {
-      label:'Маржа',
-      val:d.margin?fmt(d.margin)+' ₽':'—',
-      sub:d.marginEst?'~ оценочная':'фактическая',
-      delta:prev&&prev.margin?getDelta(d.margin,prev.margin):null,
-      deltaMode:'standard',
-      line:'#7c3aed'
-    },
-    {
-      label:'CPL (Акк. 1)',
-      val:d.cpl?d.cpl.toFixed(0)+' ₽':'—',
-      sub:'стоимость лида',
-      delta:dCPL,
-      deltaMode:'inverted', // падение = хорошо
-      line:'#d97706'
-    },
-    {
-      label:'Конверсия',
-      val:cvr,
-      sub:'отклик → продажа',
-      delta:null,
-      deltaMode:'standard',
-      line:'#0d9488'
-    },
-    {
-      label:'Отклики',
-      val:fmt(tr),
-      sub:'Акк. 1 + Акк. 2 (Профи.ру)',
-      delta:prev?getDelta(tr,prevTR):null,
-      deltaMode:'standard',
-      line:'#2563eb'
-    },
+    {label:'Бюджет (нетто)',val:fmt(net)+' ₽',sub:`возвраты: −${fmt(cd.returns)} ₽`,delta:dBudget,deltaMode:'neutral',line:'#94a3b8'},
+    {label:'Продажи',val:cd.sales,sub:`лиды: ${cd.leads}`,delta:prevCd?getDelta(cd.sales,prevCd.sales):null,deltaMode:'standard',line:'#1a7f74'},
+    {label:'Маржа',val:cd.margin?fmt(cd.margin)+' ₽':'—',sub:cd.marginEst?'~ оценочная':cd.margin?'фактическая':'н/д',delta:prevCd&&prevCd.margin?getDelta(cd.margin,prevCd.margin):null,deltaMode:'standard',line:'#7c3aed'},
+    {label:cplLabel,val:cd.cpl?cd.cpl.toFixed(0)+' ₽':'—',sub:'стоимость лида',delta:dCPL,deltaMode:'inverted',line:'#d97706'},
+    {label:'Конверсия',val:cvr,sub:'отклик → продажа',delta:null,deltaMode:'standard',line:'#0d9488'},
+    {label:rspLabel,val:fmt(cd.responses),sub:'',delta:prevCd?getDelta(cd.responses,prevCd.responses):null,deltaMode:'standard',line:'#2563eb'},
   ];
 
   document.getElementById('kpi-grid').innerHTML=cards.map(c=>{
@@ -643,34 +580,15 @@ function renderKPI(){
 // ── FUNNEL ──
 function renderFunnel(){
   const d=D[curMonth];
-  let stages;
-  if(curCh==='100staff'){
-    stages=[
-      {l:'Отклики',v:d.responses,c:'#1a7f74'},
-      {l:'Лиды',v:d.leads,c:'#2a9d8f',cvr:pct(d.leads,d.responses)},
-      {l:'Квал.',v:d.qualLeads,c:'#0d9488',cvr:pct(d.qualLeads,d.leads)},
-      {l:'Продажи',v:d.sales,c:'#065f46',cvr:pct(d.sales,d.qualLeads)},
-    ];
-  } else if(curCh==='prostaff'){
-    const pr=d.proResponses||0,pl=d.proLeads||0,pq=d.proQualLeads||0,ps=d.proSales||0;
-    stages=[
-      {l:'Отклики',v:pr,c:'#7c3aed'},
-      {l:'Лиды',v:pl,c:'#8b5cf6',cvr:pct(pl,pr)},
-      {l:'Квал.',v:pq,c:'#a78bfa',cvr:pct(pq,pl)},
-      {l:'Продажи',v:ps,c:'#4c1d95',cvr:pct(ps,pq)},
-    ];
-  } else {
-    const tr=d.responses+(d.proResponses||0);
-    const tl=d.leads+(d.proLeads||0);
-    const tq=d.qualLeads+(d.proQualLeads||0);
-    const ts=d.sales+(d.proSales||0);
-    stages=[
-      {l:'Отклики',v:tr,c:'#1a7f74'},
-      {l:'Лиды',v:tl,c:'#2a9d8f',cvr:pct(tl,tr)},
-      {l:'Квал.',v:tq,c:'#0d9488',cvr:pct(tq,tl)},
-      {l:'Продажи',v:ts,c:'#065f46',cvr:pct(ts,tq)},
-    ];
-  }
+  const cd=getChData(d);
+  let color='#1a7f74';
+  if(curChannel==='profi') color='#7c3aed';
+  const stages=[
+    {l:'Отклики',v:cd.responses,c:color},
+    {l:'Лиды',v:cd.leads,c:color,cvr:pct(cd.leads,cd.responses)},
+    {l:'Квал.',v:cd.qualLeads,c:color,cvr:pct(cd.qualLeads,cd.leads)},
+    {l:'Продажи',v:cd.sales,c:color,cvr:pct(cd.sales,cd.qualLeads)},
+  ];
   const max=stages[0].v||1;
   document.getElementById('funnel').innerHTML=stages.map((s,i)=>`
     ${i>0?`<div class="f-arrow">↳ ${s.cvr}</div>`:''}
@@ -820,8 +738,31 @@ const INS={
     '<strong>Возвраты в апреле</strong> аномально высокие (11%). В мае–июне снизились до 7–8% — тренд позитивный.',
   ]
 };
+const INS_CH={
+  avito:{
+    note:'Авито (Аккаунт 1) — основной канал. Данные за апрель–июнь.',
+    apr:'<strong>CPL 149 ₽</strong> — самый высокий за квартал. Конверсия лид→продажа максимальная (75%). Лиды дорогие, но качественные.',
+    may:'<strong>Лучший объём по Авито</strong>: 75 лидов, CPL снизился до 100 ₽. Конверсия 59%.',
+    jun:'<strong>Просадка лидов −37%</strong> к маю по Авито. CPL стабилен (100 ₽). Вероятная причина — снижение бюджета.',
+    all:'<strong>Авито</strong> — стабильный источник с прогнозируемым CPL 100–150 ₽. Лучший месяц — май.'
+  },
+  profi:{
+    note:'Профи.ру (Аккаунт 2) — запущен с мая.',
+    apr:'<strong>Профи.ру не работал</strong> в апреле. Данные доступны с мая.',
+    may:'<strong>Профи.ру CPL 81 ₽</strong> — дешевле Авито. Но квалификация ниже (49%). Канал перспективен.',
+    jun:'<strong>Профи.ру CPL вырос до 119 ₽</strong> в июне. Квалификация упала. Требует оптимизации.',
+    all:'<strong>Профи.ру</strong> дешевле по CPL в мае (81 ₽), но качество лидов ниже Авито. Потенциал есть при улучшении квалификации.'
+  }
+};
 function renderInsights(){
-  document.getElementById('insights').innerHTML=(INS[curMonth]||INS.all).map(t=>`<div class="insight">${t}</div>`).join('');
+  if(curChannel!=='all'&&INS_CH[curChannel]){
+    const ch=INS_CH[curChannel];
+    const key=curMonth==='all'?'all':curMonth;
+    const texts=[ch.note, ch[key]||ch.all].filter(Boolean);
+    document.getElementById('insights').innerHTML=texts.map(t=>`<div class="insight">${t}</div>`).join('');
+  } else {
+    document.getElementById('insights').innerHTML=(INS[curMonth]||INS.all).map(t=>`<div class="insight">${t}</div>`).join('');
+  }
 }
 
 // ── CONTROLS ──
@@ -830,10 +771,10 @@ function setMonth(m){
   ['apr','may','jun','all'].forEach(k=>document.getElementById('tab-'+k).classList.toggle('active',k===m));
   renderKPI();renderFunnel();renderTrend();renderDirs();renderInsights();
 }
-function setCh(ch){
-  curCh=ch;
-  ['all','100staff','prostaff'].forEach(k=>document.getElementById('ch-'+k).classList.toggle('active',k===ch));
-  renderFunnel();
+function setChannel(ch){
+  curChannel=ch;
+  ['all','avito','profi'].forEach(k=>document.getElementById('ch-tab-'+k).classList.toggle('active',k===ch));
+  renderKPI();renderFunnel();renderInsights();
 }
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
