@@ -369,7 +369,7 @@ footer{
         </button>
         <div class="topbar-left">
           <h1>Маркетинг — воронка</h1>
-          <p>Профи.ру · Аккаунт 1 и Аккаунт 2 · апрель–июнь 2026</p>
+          <p>Профи.ру · 100Staff и PROStaff · апрель–июнь 2026</p>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
@@ -381,8 +381,8 @@ footer{
         </div>
         <div class="period-tabs">
           <button onclick="setChannel('all')" id="ch-tab-all" class="active">Все</button>
-          <button onclick="setChannel('avito')" id="ch-tab-avito">Авито</button>
-          <button onclick="setChannel('profi')" id="ch-tab-profi">Профи.ру</button>
+          <button onclick="setChannel('avito')" id="ch-tab-avito">100Staff</button>
+          <button onclick="setChannel('profi')" id="ch-tab-profi">PROStaff</button>
         </div>
       </div>
     </div>
@@ -541,8 +541,8 @@ function renderKPI(){
   const cvr=pct(cd.sales,cd.responses);
   const dBudget=prev?getDelta(net,prevNet):null;
   const dCPL=prevCd&&prevCd.cpl?getDelta(cd.cpl,prevCd.cpl):null;
-  const cplLabel=curChannel==='profi'?'CPL (Профи.ру)':curChannel==='avito'?'CPL (Авито)':'CPL (Авито)';
-  const rspLabel=curChannel==='profi'?'Отклики (Профи.ру)':curChannel==='avito'?'Отклики (Авито)':'Отклики (все)';
+  const cplLabel=curChannel==='profi'?'CPL (PROStaff)':curChannel==='avito'?'CPL (100Staff)':'CPL (100Staff)';
+  const rspLabel=curChannel==='profi'?'Отклики (PROStaff)':curChannel==='avito'?'Отклики (100Staff)':'Отклики (все)';
 
   const cards=[
     {label:'Бюджет (нетто)',val:fmt(net)+' ₽',sub:`возвраты: −${fmt(cd.returns)} ₽`,delta:dBudget,deltaMode:'neutral',line:'#94a3b8'},
@@ -740,18 +740,18 @@ const INS={
 };
 const INS_CH={
   avito:{
-    note:'Авито (Аккаунт 1) — основной канал. Данные за апрель–июнь.',
+    note:'100Staff (Профи.ру, Акк. 1) — основной аккаунт. Данные за апрель–июнь.',
     apr:'<strong>CPL 149 ₽</strong> — самый высокий за квартал. Конверсия лид→продажа максимальная (75%). Лиды дорогие, но качественные.',
-    may:'<strong>Лучший объём по Авито</strong>: 75 лидов, CPL снизился до 100 ₽. Конверсия 59%.',
-    jun:'<strong>Просадка лидов −37%</strong> к маю по Авито. CPL стабилен (100 ₽). Вероятная причина — снижение бюджета.',
-    all:'<strong>Авито</strong> — стабильный источник с прогнозируемым CPL 100–150 ₽. Лучший месяц — май.'
+    may:'<strong>Лучший объём по 100Staff</strong>: 75 лидов, CPL снизился до 100 ₽. Конверсия 59%.',
+    jun:'<strong>Просадка лидов −37%</strong> к маю. CPL стабилен (100 ₽). Вероятная причина — снижение бюджета.',
+    all:'<strong>100Staff</strong> — стабильный аккаунт с прогнозируемым CPL 100–150 ₽. Лучший месяц — май.'
   },
   profi:{
-    note:'Профи.ру (Аккаунт 2) — запущен с мая.',
-    apr:'<strong>Профи.ру не работал</strong> в апреле. Данные доступны с мая.',
-    may:'<strong>Профи.ру CPL 81 ₽</strong> — дешевле Авито. Но квалификация ниже (49%). Канал перспективен.',
-    jun:'<strong>Профи.ру CPL вырос до 119 ₽</strong> в июне. Квалификация упала. Требует оптимизации.',
-    all:'<strong>Профи.ру</strong> дешевле по CPL в мае (81 ₽), но качество лидов ниже Авито. Потенциал есть при улучшении квалификации.'
+    note:'PROStaff (Профи.ру, Акк. 2) — запущен с мая.',
+    apr:'<strong>PROStaff не работал</strong> в апреле. Данные доступны с мая.',
+    may:'<strong>PROStaff CPL 81 ₽</strong> — дешевле 100Staff. Но квалификация лидов ниже (49%). Аккаунт перспективен.',
+    jun:'<strong>PROStaff CPL вырос до 119 ₽</strong> в июне. Квалификация упала. Требует оптимизации.',
+    all:'<strong>PROStaff</strong> дешевле по CPL в мае (81 ₽), но качество лидов ниже 100Staff. Потенциал есть при улучшении квалификации.'
   }
 };
 function renderInsights(){
