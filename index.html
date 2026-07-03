@@ -1033,17 +1033,17 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     }
   } catch(e){ console.warn('data.json fetch failed, using static data', e); }
 
-  // Кнопка: в Telegram → «В браузере», в браузере (mode=browser) → «Скриншот»
+  // Кнопка: в Telegram → «В браузере», в браузере → «Скриншот»
   const btn = document.getElementById('action-btn');
   if(btn){
+    const DASH_URL = 'https://lyubovchii.github.io/promoright-miniapp/?mode=browser';
     const inBrowser = new URLSearchParams(location.search).get('mode') === 'browser';
     if(inBrowser){
       btn.textContent = '📸 Скриншот';
       btn.onclick = exportSnapshot;
     } else {
       btn.textContent = '🌐 В браузере';
-      const url = location.href.split('?')[0] + '?mode=browser';
-      btn.onclick = () => tg && tg.openLink ? tg.openLink(url) : window.open(url, '_blank');
+      btn.onclick = () => tg && tg.openLink ? tg.openLink(DASH_URL) : window.open(DASH_URL, '_blank');
     }
   }
 
