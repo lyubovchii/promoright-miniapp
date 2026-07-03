@@ -140,9 +140,10 @@ html,body { height:100%; font-family:var(--sans); background:var(--bg); color:va
 /* ── KPI GRID ── */
 .kpi-grid {
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:12px;
 }
+@media (max-width: 900px) { .kpi-grid { grid-template-columns:repeat(3,1fr); } }
 
 .kpi-card {
   background:var(--card);
@@ -429,7 +430,7 @@ footer{
       <!-- CPL + НАПРАВЛЕНИЯ -->
       <div class="two-col">
         <div class="card">
-          <div class="card-head"><span class="card-title">CPL по месяцам и каналам</span></div>
+          <div class="card-head"><span class="card-title">100Staff vs PROStaff — CPL и лиды</span></div>
           <div class="ch-wrap-sm"><canvas id="cplChart"></canvas></div>
         </div>
         <div class="card">
@@ -544,11 +545,16 @@ function renderKPI(){
   const cplLabel=curChannel==='profi'?'CPL (PROStaff)':curChannel==='avito'?'CPL (100Staff)':'CPL (100Staff)';
   const rspLabel=curChannel==='profi'?'Отклики (PROStaff)':curChannel==='avito'?'Отклики (100Staff)':'Отклики (все)';
 
+  const cps=cd.sales>0?(net/cd.sales).toFixed(0)+' ₽':'—';
+  const prevCps=prevCd&&prevCd.sales>0?((prevCd.budget-prevCd.returns)/prevCd.sales):null;
+  const dCPS=prevCd&&prevCd.sales>0?getDelta(cd.sales>0?net/cd.sales:null,prevCps):null;
+
   const cards=[
     {label:'Бюджет (нетто)',val:fmt(net)+' ₽',sub:`возвраты: −${fmt(cd.returns)} ₽`,delta:dBudget,deltaMode:'neutral',line:'#94a3b8'},
     {label:'Продажи',val:cd.sales,sub:`лиды: ${cd.leads}`,delta:prevCd?getDelta(cd.sales,prevCd.sales):null,deltaMode:'standard',line:'#1a7f74'},
     {label:'Маржа',val:cd.margin?fmt(cd.margin)+' ₽':'—',sub:cd.marginEst?'~ оценочная':cd.margin?'фактическая':'н/д',delta:prevCd&&prevCd.margin?getDelta(cd.margin,prevCd.margin):null,deltaMode:'standard',line:'#7c3aed'},
     {label:cplLabel,val:cd.cpl?cd.cpl.toFixed(0)+' ₽':'—',sub:'стоимость лида',delta:dCPL,deltaMode:'inverted',line:'#d97706'},
+    {label:'CPS',val:cps,sub:'стоимость продажи',delta:dCPS,deltaMode:'inverted',line:'#e11d48'},
     {label:'Конверсия',val:cvr,sub:'отклик → продажа',delta:null,deltaMode:'standard',line:'#0d9488'},
     {label:rspLabel,val:fmt(cd.responses),sub:'',delta:prevCd?getDelta(cd.responses,prevCd.responses):null,deltaMode:'standard',line:'#2563eb'},
   ];
@@ -628,7 +634,7 @@ function renderTrend(){
   });
 }
 
-// ── CPL CHART ──
+// ── CPL CHART — сравнение каналов ──
 function renderCPL(){
   if(cplChart)cplChart.destroy();
   cplChart=new Chart(document.getElementById('cplChart'),{
@@ -636,19 +642,22 @@ function renderCPL(){
     data:{
       labels:['Апрель','Май','Июнь'],
       datasets:[
-        {label:'Аккаунт 1 — 100Staff',data:[D.apr.cpl,D.may.cpl,D.jun.cpl],backgroundColor:'rgba(26,127,116,.2)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:5},
-        {label:'Аккаунт 2 — ProStaff',data:[null,D.may.proCPL,D.jun.proCPL],backgroundColor:'rgba(124,58,237,.15)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:5}
+        {label:'CPL — 100Staff',data:[D.apr.cpl,D.may.cpl,D.jun.cpl],backgroundColor:'rgba(26,127,116,.25)',borderColor:'#1a7f74',borderWidth:1.5,borderRadius:5,yAxisID:'y'},
+        {label:'CPL — PROStaff',data:[null,D.may.proCPL,D.jun.proCPL],backgroundColor:'rgba(124,58,237,.2)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:5,yAxisID:'y'},
+        {label:'Лиды 100Staff',data:[D.apr.leads,D.may.leads,D.jun.leads],type:'line',borderColor:'#1a7f74',borderDash:[4,3],pointBackgroundColor:'#1a7f74',pointRadius:4,tension:.3,fill:false,yAxisID:'y2'},
+        {label:'Лиды PROStaff',data:[null,D.may.proLeads,D.jun.proLeads],type:'line',borderColor:'#7c3aed',borderDash:[4,3],pointBackgroundColor:'#7c3aed',pointRadius:4,tension:.3,fill:false,yAxisID:'y2'},
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
-        legend:{labels:{color:'#94a3b8',font:{size:11,family:'Inter'},boxWidth:10,padding:10}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toFixed(0)} ₽`}}
+        legend:{labels:{color:'#94a3b8',font:{size:10,family:'Inter'},boxWidth:8,padding:8}},
+        tooltip:{callbacks:{label:c=>c.datasetIndex<2?` ${c.dataset.label}: ${c.parsed.y?.toFixed(0)} ₽`:` ${c.dataset.label}: ${c.parsed.y} лидов`}}
       },
       scales:{
         x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#f1f5f9'}},
-        y:{ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+' ₽'},grid:{color:'#f1f5f9'},min:60}
+        y:{position:'left',ticks:{color:'#94a3b8',font:{size:10},callback:v=>v+' ₽'},grid:{color:'#f1f5f9'},min:60,title:{display:true,text:'CPL, ₽',color:'#94a3b8',font:{size:9}}},
+        y2:{position:'right',ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false},title:{display:true,text:'Лиды',color:'#94a3b8',font:{size:9}},beginAtZero:true}
       }
     }
   });
@@ -704,8 +713,13 @@ const DIRS=[
   {l:'Лофты',apps:[0,0,0],leads:[0,0,0],sales:[0,0,0]},
 ];
 function renderDirs(){
+  const tbody=document.getElementById('dir-body');
+  if(curChannel!=='all'){
+    tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:14px 0;font-size:12px;">Разбивка по направлениям доступна только в режиме «Все»</td></tr>`;
+    return;
+  }
   const mi=curMonth==='apr'?0:curMonth==='may'?1:curMonth==='jun'?2:null;
-  document.getElementById('dir-body').innerHTML=DIRS.map(d=>{
+  tbody.innerHTML=DIRS.map(d=>{
     let a,l,s;
     if(mi!==null){a=d.apps[mi];l=d.leads[mi];s=d.sales[mi];}
     else{a=d.apps.reduce((x,y)=>x+y,0);l=d.leads.reduce((x,y)=>x+y,0);s=d.sales.reduce((x,y)=>x+y,0);}
@@ -754,15 +768,49 @@ const INS_CH={
     all:'<strong>PROStaff</strong> дешевле по CPL в мае (81 ₽), но качество лидов ниже 100Staff. Потенциал есть при улучшении квалификации.'
   }
 };
+function genAIInsight(){
+  const d=D[curMonth]==='all'?D.all:D[curMonth]||D.jun;
+  const cd=getChData(d);
+  const insights=[];
+  // CPL сравнение каналов (только для "все" и не апрель)
+  if(curChannel==='all'&&curMonth!=='apr'&&d.proCPL){
+    const diff=(d.cpl-d.proCPL).toFixed(0);
+    if(Math.abs(diff)>5){
+      const cheaper=d.cpl<d.proCPL?'100Staff':'PROStaff';
+      const pricier=cheaper==='100Staff'?'PROStaff':'100Staff';
+      insights.push(`<strong>ИИ-инсайт:</strong> ${cheaper} даёт лид на ${Math.abs(diff)} ₽ дешевле, чем ${pricier}. При равном бюджете перераспределение в пользу ${cheaper} даст +${Math.round(Math.abs(diff)/d.cpl*100)}% лидов.`);
+    }
+  }
+  // Стоимость продажи vs лида
+  if(cd.sales>0&&cd.leads>0){
+    const cps=Math.round((cd.budget-cd.returns)/cd.sales);
+    const cpl=cd.cpl||Math.round(cd.budget/cd.leads);
+    const mult=(cps/cpl).toFixed(1);
+    insights.push(`<strong>ИИ-инсайт:</strong> Одна сделка обходится в ${fmt(cps)} ₽ — в ${mult}× дороже лида (${cpl} ₽). Снижение потерь на этапе переговоров напрямую сократит CPS.`);
+  }
+  // Тренд лидов
+  if(curMonth==='jun'){
+    const may=getChData(D.may), jun=getChData(D.jun);
+    if(may.leads>0){
+      const drop=Math.round((may.leads-jun.leads)/may.leads*100);
+      if(drop>0) insights.push(`<strong>ИИ-инсайт:</strong> Лиды упали на ${drop}% к маю. Если тренд продолжится, июль даст ~${Math.round(jun.leads*(1-drop/100))} лидов. Рекомендуется увеличить бюджет или пересмотреть тексты откликов.`);
+    }
+  }
+  return insights;
+}
+
 function renderInsights(){
+  const aiInsights=genAIInsight();
+  let staticTexts=[];
   if(curChannel!=='all'&&INS_CH[curChannel]){
     const ch=INS_CH[curChannel];
     const key=curMonth==='all'?'all':curMonth;
-    const texts=[ch.note, ch[key]||ch.all].filter(Boolean);
-    document.getElementById('insights').innerHTML=texts.map(t=>`<div class="insight">${t}</div>`).join('');
+    staticTexts=[ch.note, ch[key]||ch.all].filter(Boolean);
   } else {
-    document.getElementById('insights').innerHTML=(INS[curMonth]||INS.all).map(t=>`<div class="insight">${t}</div>`).join('');
+    staticTexts=INS[curMonth]||INS.all;
   }
+  const allTexts=[...aiInsights,...staticTexts];
+  document.getElementById('insights').innerHTML=allTexts.map(t=>`<div class="insight">${t}</div>`).join('');
 }
 
 // ── CONTROLS ──
@@ -774,7 +822,7 @@ function setMonth(m){
 function setChannel(ch){
   curChannel=ch;
   ['all','avito','profi'].forEach(k=>document.getElementById('ch-tab-'+k).classList.toggle('active',k===ch));
-  renderKPI();renderFunnel();renderInsights();
+  renderKPI();renderFunnel();renderDirs();renderInsights();
 }
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
