@@ -7,6 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -410,7 +411,7 @@ footer{
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="pdf-btn" onclick="window.print()">🖨 PDF</button>
+          <button class="pdf-btn" id="pdf-btn" onclick="exportSnapshot()">📸 Скриншот</button>
           <div class="period-tabs">
             <button onclick="setMonth('apr')" id="tab-apr">Апр</button>
             <button onclick="setMonth('may')" id="tab-may">Май</button>
@@ -549,6 +550,26 @@ function showTerm(key){
 function closeModal(e){
   if(e.target===document.getElementById('modal-overlay'))
     document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function exportSnapshot(){
+  const btn=document.getElementById('pdf-btn');
+  btn.textContent='⏳ Готовлю...';
+  btn.disabled=true;
+  try{
+    const el=document.querySelector('.content');
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#f0f4f8',logging:false});
+    const link=document.createElement('a');
+    const month={apr:'апрель',may:'май',jun:'июнь',all:'апрель-июнь'}[curMonth]||curMonth;
+    link.download=`дашборд_${month}_2026.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    alert('Не удалось создать скриншот: '+e.message);
+  }finally{
+    btn.textContent='📸 Скриншот';
+    btn.disabled=false;
+  }
 }
 
 // ── DATA ──────────────────────────────────────
