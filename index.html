@@ -525,7 +525,8 @@ if(window.ChartDataLabels) Chart.register(ChartDataLabels);
 function initActionBtn(){
   const btn=document.getElementById('action-btn');
   if(!btn) return;
-  if(tg){
+  const isInTelegram = !!(tg && tg.initData && tg.initData.length > 0);
+  if(isInTelegram){
     btn.textContent='🌐 В браузере';
     btn.onclick=()=>tg.openLink(location.href);
   } else {
