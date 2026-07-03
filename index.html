@@ -370,7 +370,7 @@ footer{
         </button>
         <div class="topbar-left">
           <h1>Маркетинг — воронка</h1>
-          <p>Профи.ру · 100Staff и PROStaff · апрель–июнь 2026</p>
+          <p>Профи.ру · 100Staff и PROStaff · апрель–июнь 2026 <span id="data-updated" style="opacity:.6;font-size:10px;margin-left:4px;"></span></p>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
@@ -468,22 +468,22 @@ if (tg) { tg.ready(); tg.expand(); }
 // ── DATA ──────────────────────────────────────
 const D = {
   apr:{
-    cpl:149.80, responses:223, leads:60, qualLeads:45, sales:16,
-    budget:9085, returns:97, margin:130000, marginEst:true,
-    proResponses:0,proLeads:0,proQualLeads:0,proSales:0,proBudget:0,proCPL:null,
-    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[5,15,17,17,6],sales:[1,5,8,2,0]}
+    cpl:155.8, responses:239, leads:62, qualLeads:49, sales:21,
+    budget:9657, returns:0, margin:142183, marginEst:false,
+    proResponses:89,proLeads:18,proQualLeads:12,proSales:6,proBudget:4496,proCPL:249.8,
+    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[5,15,17,17,8],sales:[2,6,8,3,2]}
   },
   may:{
-    cpl:100.69, responses:185, leads:75, qualLeads:44, sales:14,
-    budget:7685, returns:133, margin:30501, marginEst:false,
-    proResponses:127,proLeads:39,proQualLeads:19,proSales:8,proBudget:3188,proCPL:81.74,
-    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[2,15,28,12,18],sales:[0,5,5,3,1]}
+    cpl:102.5, responses:150, leads:75, qualLeads:40, sales:15,
+    budget:7685, returns:0, margin:33429, marginEst:false,
+    proResponses:102,proLeads:40,proQualLeads:16,proSales:7,proBudget:4160,proCPL:104.0,
+    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[2,15,28,12,18],sales:[0,5,5,3,2]}
   },
   jun:{
-    cpl:100.26, responses:132, leads:47, qualLeads:28, sales:11,
-    budget:4778, returns:66, margin:26505, marginEst:false,
-    proResponses:112,proLeads:24,proQualLeads:7,proSales:7,proBudget:2858,proCPL:119.08,
-    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[10,12,14,9,2],sales:[1,3,4,3,0]}
+    cpl:106.2, responses:120, leads:45, qualLeads:28, sales:11,
+    budget:4778, returns:0, margin:31145, marginEst:false,
+    proResponses:143,proLeads:30,proQualLeads:10,proSales:7,proBudget:3698,proCPL:123.3,
+    weeks:{labels:['Н1','Н2','Н3','Н4','Н5'],leads:[10,12,14,7,2],sales:[1,3,4,3,0]}
   }
 };
 D.all = {
@@ -834,8 +834,49 @@ function closeSidebar(){
 }
 
 // ── INIT ──
-window.addEventListener('DOMContentLoaded',()=>{
-  renderKPI();renderFunnel();renderTrend();renderCPL();renderBudget();renderMargin();renderDirs();renderInsights();
+function renderAll(){renderKPI();renderFunnel();renderTrend();renderCPL();renderBudget();renderMargin();renderDirs();renderInsights();}
+
+window.addEventListener('DOMContentLoaded', async ()=>{
+  try {
+    const res = await fetch('data.json?t='+Date.now());
+    if(res.ok){
+      const json = await res.json();
+      // Patch D with live data (keep weeks from static if not in json)
+      ['apr','may','jun','jul'].forEach(m=>{
+        if(json[m]){
+          const weeks = D[m]?.weeks;
+          Object.assign(D[m]||(D[m]={}), json[m]);
+          if(weeks && !json[m].weeks) D[m].weeks = weeks;
+        }
+      });
+      // Rebuild D.all
+      const months = ['apr','may','jun'].filter(m=>D[m]);
+      D.all = {
+        cpl:+((months.reduce((s,m)=>s+D[m].budget,0))/(months.reduce((s,m)=>s+D[m].leads,0))).toFixed(1),
+        responses:months.reduce((s,m)=>s+D[m].responses,0),
+        leads:months.reduce((s,m)=>s+D[m].leads,0),
+        qualLeads:months.reduce((s,m)=>s+D[m].qualLeads,0),
+        sales:months.reduce((s,m)=>s+D[m].sales,0),
+        budget:months.reduce((s,m)=>s+D[m].budget,0),
+        returns:0, margin:months.reduce((s,m)=>s+D[m].margin,0), marginEst:false,
+        proResponses:months.reduce((s,m)=>s+(D[m].proResponses||0),0),
+        proLeads:months.reduce((s,m)=>s+(D[m].proLeads||0),0),
+        proQualLeads:months.reduce((s,m)=>s+(D[m].proQualLeads||0),0),
+        proSales:months.reduce((s,m)=>s+(D[m].proSales||0),0),
+        proBudget:months.reduce((s,m)=>s+(D[m].proBudget||0),0),
+        proCPL:+((months.reduce((s,m)=>s+(D[m].proBudget||0),0))/(months.reduce((s,m)=>s+(D[m].proLeads||1),0))).toFixed(1),
+        weeks:{labels:['АН1','АН2','МН1','МН2','ИН1','ИН2'],
+               leads:[...(D.apr?.weeks?.leads||[]),...(D.may?.weeks?.leads||[]),...(D.jun?.weeks?.leads||[])].slice(0,15),
+               sales:[...(D.apr?.weeks?.sales||[]),...(D.may?.weeks?.sales||[]),...(D.jun?.weeks?.sales||[])].slice(0,15)}
+      };
+      // Show last update badge
+      if(json.updated){
+        const badge = document.getElementById('data-updated');
+        if(badge) badge.textContent = 'Данные: '+json.updated;
+      }
+    }
+  } catch(e){ console.warn('data.json fetch failed, using static data', e); }
+  renderAll();
 });
 </script>
 </body>
