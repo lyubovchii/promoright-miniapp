@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-13",
+  "updated": "2026-07-20",
   "source": "Google Sheets",
   "apr": {
     "cpl": 155.8,
@@ -54,18 +54,18 @@
   },
   "jul": {
     "cpl": 0.0,
-    "responses": 50,
-    "leads": 16,
-    "qualLeads": 7,
-    "sales": 0,
+    "responses": 87,
+    "leads": 30,
+    "qualLeads": 16,
+    "sales": 4,
     "budget": 0,
     "returns": 0,
-    "margin": 0,
+    "margin": 9050,
     "marginEst": false,
-    "proResponses": 65,
-    "proLeads": 22,
-    "proQualLeads": 8,
-    "proSales": 1,
+    "proResponses": 101,
+    "proLeads": 37,
+    "proQualLeads": 10,
+    "proSales": 6,
     "proBudget": 0,
     "proCPL": 0.0
   }
